@@ -134,7 +134,7 @@ function App() {
 
   const Title = () => {
     return (
-      <h1 className="Title" style={{color: (gameInstance.current.turn % 2 === 0 ? "#FB6161" :  "#61dafb")}}>
+      <h1 className="Title" style={{color: (gameInstance.current.turn % 2 === 0 ? "green" :  "#61dafb")}}>
           Checkers
       </h1>
     );
