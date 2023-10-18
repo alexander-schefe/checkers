@@ -82,7 +82,7 @@ function App() {
 
     if(piece !== null) {
       if (piece.color !== (gameInstance.current.turn % 2 === 0 ? Color.White : Color.Black)) return;
-      console.log("Selected P." + i.toString() + ", " + (piece.color === 0 ? "White" : "Black"));
+      console.log("Selected P." + i.toString() + ", " + (piece.color === 0 ? "White" : "Black") + ", king: " + piece.king);
       selectedPiece.current = i;
       console.log(piece.getPossibleMovePositions(gameInstance.current.fieldData, gameInstance.current.size));
       return;

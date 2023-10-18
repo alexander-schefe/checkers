@@ -65,12 +65,15 @@ class GameInstance {
             this.selectionLock = piece;
             console.log("locked on " + piece.position);
         }
+        if(Math.floor(move.newPosition / this.size) === 7 && piece.color === Color.White) piece.king = true;
+        if(Math.floor(move.newPosition / this.size) === 0 && piece.color === Color.Black) piece.king = true;
     }
 }
 
 export interface IPiece {
     position : number,
     color : Color,
+    king : boolean,
 
     getPossibleMovePositions (field : (IPiece | null)[], size : number) : Move[];
 }
@@ -78,6 +81,7 @@ export interface IPiece {
 class Checker implements IPiece {
     position : number = 0;
     color : Color = Color.White;
+    king : boolean = false;
 
     constructor(position : number, color : Color) {
         this.position = position;
@@ -85,11 +89,24 @@ class Checker implements IPiece {
     }
 
     getPossibleMovePositions = (field : (IPiece | null)[], size : number) : Move[] => {
+        
+        const moves = this.getMovesInDir(field, size, 1);
+
+        if(this.king) {
+            const moves2 = this.getMovesInDir(field, size, -1);
+            moves2.forEach((e) => moves.push(e));
+        }
+
+        return moves;
+    }
+
+    getMovesInDir = (field : (IPiece | null)[],size : number, direction : number) : Move[] => {
         const moves : Move[] = [];
+        
         let pos : number;
         let pos2 : number;
         let piece : IPiece | null;
-        const dir = size * (this.color === Color.White ? 1 : -1);
+        const dir = direction * size * (this.color === Color.White ? 1 : -1);
 
         pos = this.position + dir - 1;
         if(pos >= 0 && pos < field.length && this.position % size !== 0) {
@@ -114,6 +131,7 @@ class Checker implements IPiece {
         if(pos >= 0 && pos < field.length && pos2 >= 0 && pos2 < field.length && this.position % size !== size - 2) {
             if(piece !== null && piece.color !== this.color && field[pos2] === null) moves.push(newMove(pos2, pos, false));
         }
+
         return moves;
     }
 }
