@@ -47,11 +47,12 @@ function App() {
   const Board = () => {
     const arr = [...Array(size * size)].map((x, i) => {
       const sPiece = selectedPiece.current !== -1 ? gameInstance.current.fieldData[selectedPiece.current] : null;
+      
       const pieceStyle = {
-        backgroundColor: gameInstance.current.fieldData[i] === null ? "" : (gameInstance.current.fieldData[i]?.color === 0 ? "#FB6161" : "#61dafb"),
+        backgroundColor: getPieceColor(i),
       }
       const movementSelectorStyle = {
-        display: sPiece !== null ? (sPiece.getPossibleMovePositions(gameInstance.current.fieldData, gameInstance.current.size).filter((e) => { return e.newPosition === i}).length > 0 ? "block" : "none") : "none",
+        display: sPiece !== null ? (sPiece.getAllowedMoves(gameInstance.current).filter((e) => { return e.newPosition === i}).length > 0 ? "block" : "none") : "none",
         PointerEvent: "none",
       }
       return (<div key={i} className={"Cell Cell" + ((i + (Math.floor(i / size) % 2 === 0 ? 1 : 0)) % 2 === 0 ? "Even" : "Odd")}>
@@ -70,6 +71,15 @@ function App() {
     );
   }
 
+  const getPieceColor = (i : number) => {
+    const colNWhite = "#FB6161";
+    const colNBlack = "#61dafb";
+    const colKWhite = "#d32469";
+    const colKBlack = "#53F2D6";
+    let col = gameInstance.current.fieldData[i] === null ? "" : (gameInstance.current.fieldData[i]?.color === 0 ? (gameInstance.current.fieldData[i]?.king ? colKWhite : colNWhite) : (gameInstance.current.fieldData[i]?.king ? colKBlack : colNBlack));
+    return col;
+  }
+
   const onClickPiece = (i : number) => {
     const piece = gameInstance.current.fieldData[i];
 
@@ -84,13 +94,13 @@ function App() {
       if (piece.color !== (gameInstance.current.turn % 2 === 0 ? Color.White : Color.Black)) return;
       console.log("Selected P." + i.toString() + ", " + (piece.color === 0 ? "White" : "Black") + ", king: " + piece.king);
       selectedPiece.current = i;
-      console.log(piece.getPossibleMovePositions(gameInstance.current.fieldData, gameInstance.current.size));
+      console.log(piece.getAllowedMoves(gameInstance.current));
       return;
     }
     else if(selectedPiece.current !== -1) {
       if(gameInstance.current.fieldData[selectedPiece.current] !== null) {
         const sp = gameInstance.current.fieldData[selectedPiece.current] as IPiece;
-        const m = sp.getPossibleMovePositions(gameInstance.current.fieldData, gameInstance.current.size);
+        const m = sp.getAllowedMoves(gameInstance.current);
         const poss = m.filter((e) => {
           return e.newPosition === i;
         });
