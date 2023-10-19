@@ -64,13 +64,14 @@ html {
   width: 80%;
   height: 80%;
   border-radius: 50%;
+  outline-offset: -2px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .Piece:hover {
-  border: 2px white solid;
+  outline: 2px white solid;
 } 
 
 .MoveSelector {

@@ -50,6 +50,8 @@ function App() {
       
       const pieceStyle = {
         backgroundColor: getPieceColor(i),
+        opacity: gameInstance.current.fieldData[i] !== null ? ((gameInstance.current.fieldData[i] as IPiece).getAllowedMoves(gameInstance.current).length > 0 ? "100%" : "50%") : "100%",
+        outline: (gameInstance.current.fieldData[i] === sPiece && sPiece !== null) ? "2px white solid" : "",
       }
       const movementSelectorStyle = {
         display: sPiece !== null ? (sPiece.getAllowedMoves(gameInstance.current).filter((e) => { return e.newPosition === i}).length > 0 ? "block" : "none") : "none",
