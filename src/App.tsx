@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { Component } from 'react';
+import Switch from "react-switch";
 import './App.css';
 import GameInstance from "./Game"
-import {IPiece, Color} from "./Game"
+import {IPiece, Color, RuleSettings} from "./Game"
+import settingsLogo from "./settingsLogo.png";
 
 function App() {
   const size = 8;
@@ -10,9 +12,17 @@ function App() {
   const oldTime = React.useRef(0);
   const t = React.useRef(0);
 
-  const gameInstance = React.useRef(new GameInstance(size));
-
   const selectedPiece = React.useRef(-1);
+
+  const setting1 = React.useRef(true);
+
+  const show = React.useRef(false);
+
+  const createSettings = () => {
+    return {forceTake : setting1.current};
+  }
+
+  const gameInstance = React.useRef(new GameInstance(size, createSettings()));
 
   const useFrameTime = () => {
     const [frameTime, setFrameTime] = React.useState(performance.now());
@@ -28,17 +38,19 @@ function App() {
 
     return frameTime;
   };
-  
+
   const Game = () => {
     document.title = "Checkers - by Alexander";
     const frameTime = useFrameTime();
     update(frameTime);
+
     return (
       <section className="Holder">
         <Title />
         <div className="Game" style={{border: "2px " + (gameInstance.current.turn % 2 === 0 ? "#FB6161" : "#61dafb") + " solid"}}>
         
         <Board/>
+        <Settings/>
       </div>
       </section>
     );
@@ -118,7 +130,8 @@ function App() {
   const startGame = React.useCallback(() => {
     console.log("starting game...");
     running.current = true;
-    gameInstance.current = new GameInstance(size);
+    gameInstance.current = new GameInstance(size, createSettings());
+    console.log(setting1);
     gameInstance.current.initializeField();
     gameInstance.current.turn = 1;
     selectedPiece.current = -1;
@@ -127,7 +140,7 @@ function App() {
   const stopGame = React.useCallback(() => {
     console.log("resetting game...");
     running.current = false;
-    gameInstance.current = new GameInstance(size);
+    gameInstance.current = new GameInstance(size, createSettings());
     gameInstance.current.turn = 1;
     selectedPiece.current = -1;
   }, []);
@@ -140,8 +153,6 @@ function App() {
     if(!running.current) return;
     
     //CODE FOR UPDATE HERE
-    
-    Title();
 
   }, []);
 
@@ -151,6 +162,33 @@ function App() {
           Checkers
       </h1>
     );
+  }
+
+  const Settings = () => {
+    return(
+      <div className="Settings" style={{display: show.current ? "block" : "none"}}>
+        <div className="SettingsTitle"><h3>Rule Settings</h3><p style={{fontSize: "15px", color: "#aaa"}}>{"(will only apply after resetting)"}</p></div>
+          <div className="SettingsGrid">
+            <div className="Setting">
+              <Switch 
+                id="s1"
+                className="SettingSwitch"
+                height={35}
+                width={75}
+                uncheckedIcon={false}
+                checkedIcon={false}
+                onHandleColor="#fff"
+                offHandleColor="#fff"
+                onColor="#61dafb"
+                offColor="#282c34"
+                onChange={(e) => {setting1.current = e}}
+                checked={setting1.current}
+              />
+            <p>Force Take</p>
+          </div>
+        </div>
+      </div>
+    )
   }
   
   return (
@@ -168,6 +206,10 @@ function App() {
           </button>
         </div>
       </div>
+      
+      <button id="SettingsButton" onClick={() => {show.current = !show.current;}}>
+        <img src={settingsLogo} id="SettingsLogo"/>
+      </button>
     </div>
   );
 }

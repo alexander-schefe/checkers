@@ -14,6 +14,10 @@ type Move = {
     endTurn: boolean,
 }
 
+export type RuleSettings = {
+    forceTake: boolean;
+  }
+
 function newMove(movingPiece: IPiece, pos : number, killPos : number | null, endT : boolean) : Move {
     const m : Move = {piece: movingPiece, newPosition: pos, killPosition: killPos, endTurn: endT}
     return m;
@@ -25,10 +29,12 @@ class GameInstance {
     moveHistory : [number, number][] = [];
     fieldData : (IPiece | null)[] = [];
     selectionLock : IPiece | null = null;
+    rules : RuleSettings;
  
-    constructor(size : number) {
+    constructor(size : number, ruleSettings : RuleSettings) {
         this.fieldData = Array(size * size).fill(null);
         this.size = size;
+        this.rules = ruleSettings;
     }
 
     initializeField = () => {
@@ -84,18 +90,21 @@ class GameInstance {
             } 
         });
 
-        const kMoves : Move[][] = [];
-        moves.forEach((pMoves) => {
-            const kArr : Move[] = pMoves.filter((m) => { return m.killPosition !== null });
-            if(kArr.length > 0) kMoves.push(kArr);
-        });
-
-        if(kMoves.length === 0) {
-            return moves;
+        if(this.rules.forceTake || this.selectionLock !== null) {
+            const kMoves : Move[][] = [];
+            moves.forEach((pMoves) => {
+                const kArr : Move[] = pMoves.filter((m) => { return m.killPosition !== null });
+                if(kArr.length > 0) kMoves.push(kArr);
+            });
+            if(kMoves.length === 0) {
+                return moves;
+            }
+            else {
+                return kMoves;
+            }
         }
-
         else {
-            return kMoves;
+            return moves;
         }
     }
 }
@@ -138,7 +147,7 @@ class Checker implements IPiece {
         const pMoves : Move[] | undefined = moves.find((e) => {
             return e.filter( (m) => { return m.piece.position === this.position}) .length > 0
         });
-        
+
         /* console.log("all possible moves: ");
         console.log(moves);*/
 
