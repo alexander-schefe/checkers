@@ -95,7 +95,6 @@ export class GameInstance {
         move.kills.forEach((kill) => {this.board[kill.position[0]][kill.position[1]] = null;});
 
         //Checks if current turn should end
-        console.log("kill possible: " + piece.killMovePossible());
         if(move.endTurn || !piece.killMovePossible()) {
             this.turn++;
             this.selectionLock = null;
@@ -106,7 +105,6 @@ export class GameInstance {
         }
 
         //Checks for Promotion
-        console.log("to:" + to.toString());
         if (to[1] === piece.game.size - 1 && piece.color === Color.White) {
             piece.promoted = true;
         }

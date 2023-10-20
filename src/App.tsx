@@ -49,6 +49,7 @@ function App() {
     return frameTime;
   };
 
+  //Starts the Game and applies Settings
   const startGame = React.useCallback(() => {
     console.log("starting game with settings: ");
     console.log(createSettings());
@@ -57,7 +58,7 @@ function App() {
     selectedPiece.current = null;
   }, []);
 
-
+  //Returns the actual Hex color a piece should have
   const getPieceColor = (position : [number, number]) => {
     const colNWhite = "#FB6161";
     const colNBlack = "#61dafb";
@@ -68,15 +69,19 @@ function App() {
     return col;
   }
 
+  //Handles what happens when you click on a piece
   const onClickPiece = (position : [number, number]) => {
     const piece = gameInstance.current.board[position[0]][position[1]];
 
+    //Cancels a followup jump on click if forcedTake is disabled
     if(!gameInstance.current.settings.forcedTake && piece !== null && gameInstance.current.selectionLock !== null && piece !== gameInstance.current.selectionLock) {
       gameInstance.current.turn++;
       gameInstance.current.selectionLock = null;
       selectedPiece.current = null;
       return;
     }
+
+    //Selects a piece when an actual piece gets clicked
     if(piece !== null) {
       if (piece.color !== (gameInstance.current.turn % 2 === 0 ? Color.White : Color.Black)) return;
       console.log("Selected P." + position.toString() + ", " + (piece.color === 0 ? "White" : "Black") + ", queen: " + piece.promoted);
@@ -84,6 +89,7 @@ function App() {
       selectedPiece.current = piece;
       return;
     }
+    //Does Move when an empty cell gets clicked and the selectedPiece can move there
     else if(selectedPiece.current !== null) {
       if(gameInstance.current.board[selectedPiece.current.position[0]][selectedPiece.current.position[1]] !== null) {
         const sp = gameInstance.current.board[selectedPiece.current.position[0]][selectedPiece.current.position[1]] as Piece;
@@ -117,19 +123,21 @@ function App() {
 
   const Board = () => {
     let arr = [];
+    //Generates a grid of divs for the board (checkerboard)
     for(let y = 0; y < size(); y++) {
       for(let x = 0; x < size(); x++) {
         const pieceStyle = {
           backgroundColor: getPieceColor([x, y]),
           opacity: gameInstance.current.board[x][y] !== null ? ((gameInstance.current.board[x][y] as Piece).getAllowedMoves().length > 0 ? "100%" : "60%") : "100%",
           outline: (gameInstance.current.board[x][y] === selectedPiece.current && selectedPiece.current !== null) ? "2px white solid" : "",
+          
         }
         const movementSelectorStyle = {
           display: selectedPiece.current !== null ? (selectedPiece.current.getAllowedMoves().filter((e) => { return e.to[0] === x && e.to[1] === y}).length > 0 ? "block" : "none") : "none",
           PointerEvent: "none",
         }
         arr.push (<div key={x + y * size()} className={"Cell Cell" + ((x + y) % 2 === 0 ? "Even" : "Odd")}>
-          <div className="Piece" style={pieceStyle} onClick={e => onClickPiece([x, y])}>
+          <div className={"Piece" + (gameInstance.current.board[x][y] === null ? " NoHover" : "")} style={pieceStyle} onClick={e => onClickPiece([x, y])}>
             <div className="MoveSelector" style={movementSelectorStyle}></div>
           </div>
         </div>);

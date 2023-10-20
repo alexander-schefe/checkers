@@ -243,3 +243,7 @@ p {
   padding-left: calc(50% - 75px);
   color: white;
 }
+
+.NoHover:hover {
+  outline: 0px white solid;
+}
