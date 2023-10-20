@@ -50,8 +50,8 @@ function App() {
   };
 
   //Starts the Game and applies Settings
-  const startGame = React.useCallback(() => {
-    console.log("starting game with settings: ");
+  const resetGame = React.useCallback(() => {
+    console.log("restarting game with settings: ");
     console.log(createSettings());
     running.current = true;
     gameInstance.current = new GameInstance(createSettings());
@@ -157,7 +157,7 @@ function App() {
   const Title = () => {
     return (
       <h1 className="Title" style={{color: (gameInstance.current.turn % 2 === 0 ? "#FB6161" :  "#61dafb")}}>
-          Checkers
+          Checkers (V-2.1)
       </h1>
     );
   }
@@ -204,8 +204,8 @@ function App() {
       </div>
       <div className="Footer">
         <div className="Buttons">
-          <button className="Button" onClick={startGame}>
-            Start Game
+          <button className="Button" onClick={resetGame}>
+            Reset
           </button>
         </div>
       </div>
