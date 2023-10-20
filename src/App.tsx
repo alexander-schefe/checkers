@@ -1,41 +1,39 @@
-import React, { Component } from 'react';
+import React, { MutableRefObject } from 'react';
 import Switch from "react-switch";
 import './App.css';
-import GameInstance from "./Game"
-import {IPiece, Color, RuleSettings} from "./Game"
+import {GameInstance, Piece, Color, Settings} from "./Game"
 import settingsLogo from "./settingsLogo.png";
 
 function App() {
-  const boardSize = React.useRef(8);
-
   const running = React.useRef(false);
-  const oldTime = React.useRef(0);
-  const t = React.useRef(0);
 
-  const selectedPiece = React.useRef(-1);
+  const selectedPiece : MutableRefObject<Piece | null> = React.useRef(null);
 
+  const boardSize = React.useRef(8);
   const setting1 = React.useRef(true);
   const setting2 = React.useRef(true);
   const setting3 = React.useRef(true);
   const setting4 = React.useRef(false);
 
-  const show = React.useRef(false);
+  const showSettings = React.useRef(false);
 
-  const createSettings = () => {
+  const createSettings = () : Settings => {
     return {
-      forceTake : setting1.current,
-      queenInfJump : setting2.current,
+      boardSize : boardSize.current,
+      forcedTake : setting1.current,
+      queenUnlimitedJumpDistance : setting2.current,
       queenKillMultiple: setting3.current,
       queenMoveBackwards: setting4.current,
     };
   }
 
-  const gameInstance = React.useRef(new GameInstance(boardSize.current, createSettings()));
+  const gameInstance = React.useRef(new GameInstance(createSettings()));
 
   const size = () => {
     return gameInstance.current.size;
   };
 
+  //Allows components to update each frame (I think)
   const useFrameTime = () => {
     const [frameTime, setFrameTime] = React.useState(performance.now());
     React.useEffect(() => {
@@ -51,42 +49,93 @@ function App() {
     return frameTime;
   };
 
+  const startGame = React.useCallback(() => {
+    console.log("starting game with settings: ");
+    console.log(createSettings());
+    running.current = true;
+    gameInstance.current = new GameInstance(createSettings());
+    selectedPiece.current = null;
+  }, []);
+
+
+  const getPieceColor = (position : [number, number]) => {
+    const colNWhite = "#FB6161";
+    const colNBlack = "#61dafb";
+    const colKWhite = "#d32469";
+    const colKBlack = "#53F2D6";
+    const p = gameInstance.current.board[position[0]][position[1]];
+    let col = p === null ? "#00000000" : (p?.color === 0 ? (p?.promoted ? colKWhite : colNWhite) : (p?.promoted ? colKBlack : colNBlack));
+    return col;
+  }
+
+  const onClickPiece = (position : [number, number]) => {
+    const piece = gameInstance.current.board[position[0]][position[1]];
+
+    if(!gameInstance.current.settings.forcedTake && piece !== null && gameInstance.current.selectionLock !== null && piece !== gameInstance.current.selectionLock) {
+      gameInstance.current.turn++;
+      gameInstance.current.selectionLock = null;
+      selectedPiece.current = null;
+      return;
+    }
+    if(piece !== null) {
+      if (piece.color !== (gameInstance.current.turn % 2 === 0 ? Color.White : Color.Black)) return;
+      console.log("Selected P." + position.toString() + ", " + (piece.color === 0 ? "White" : "Black") + ", queen: " + piece.promoted);
+      console.log(piece.getAllowedMoves());
+      selectedPiece.current = piece;
+      return;
+    }
+    else if(selectedPiece.current !== null) {
+      if(gameInstance.current.board[selectedPiece.current.position[0]][selectedPiece.current.position[1]] !== null) {
+        const sp = gameInstance.current.board[selectedPiece.current.position[0]][selectedPiece.current.position[1]] as Piece;
+        const m = sp.getAllowedMoves();
+        const poss = m.filter((e) => {
+          return e.to[0] === position[0] && e.to[1] === position[1];
+        });
+        if(poss?.length > 0) {
+          gameInstance.current.makeMove(poss[0]);
+          if(poss[0].endTurn) selectedPiece.current = null;
+          else onClickPiece(poss[0].to);
+        }
+      }
+    }
+  }
+
   const Game = () => {
     document.title = "Checkers - by Alexander";
-    const frameTime = useFrameTime();
-    update(frameTime);
+    useFrameTime();
 
     return (
       <section className="Holder">
         <Title />
         <div className="Game" style={{border: "2px " + (gameInstance.current.turn % 2 === 0 ? "#FB6161" : "#61dafb") + " solid"}}>
-        
-        <Board/>
+          <Board/>
+        </div>
         <Settings/>
-      </div>
       </section>
     );
   }
 
   const Board = () => {
-    const arr = [...Array(size() * size())].map((x, i) => {
-      const sPiece = selectedPiece.current !== -1 ? gameInstance.current.fieldData[selectedPiece.current] : null;
-      
-      const pieceStyle = {
-        backgroundColor: getPieceColor(i),
-        opacity: gameInstance.current.fieldData[i] !== null ? ((gameInstance.current.fieldData[i] as IPiece).getAllowedMoves(gameInstance.current).length > 0 ? "100%" : "50%") : "100%",
-        outline: (gameInstance.current.fieldData[i] === sPiece && sPiece !== null) ? "2px white solid" : "",
+    let arr = [];
+    for(let y = 0; y < size(); y++) {
+      for(let x = 0; x < size(); x++) {
+        const pieceStyle = {
+          backgroundColor: getPieceColor([x, y]),
+          opacity: gameInstance.current.board[x][y] !== null ? ((gameInstance.current.board[x][y] as Piece).getAllowedMoves().length > 0 ? "100%" : "60%") : "100%",
+          outline: (gameInstance.current.board[x][y] === selectedPiece.current && selectedPiece.current !== null) ? "2px white solid" : "",
+        }
+        const movementSelectorStyle = {
+          display: selectedPiece.current !== null ? (selectedPiece.current.getAllowedMoves().filter((e) => { return e.to[0] === x && e.to[1] === y}).length > 0 ? "block" : "none") : "none",
+          PointerEvent: "none",
+        }
+        arr.push (<div key={x + y * size()} className={"Cell Cell" + ((x + y) % 2 === 0 ? "Even" : "Odd")}>
+          <div className="Piece" style={pieceStyle} onClick={e => onClickPiece([x, y])}>
+            <div className="MoveSelector" style={movementSelectorStyle}></div>
+          </div>
+        </div>);
       }
-      const movementSelectorStyle = {
-        display: sPiece !== null ? (sPiece.getAllowedMoves(gameInstance.current).filter((e) => { return e.newPosition === i}).length > 0 ? "block" : "none") : "none",
-        PointerEvent: "none",
-      }
-      return (<div key={i} className={"Cell Cell" + ((i + (Math.floor(i / size()) % 2 === 0 ? 1 : 0)) % 2 === 0 ? "Even" : "Odd")}>
-        <div className="Piece" style={pieceStyle} onClick={e => onClickPiece(i)}>
-          <div className="MoveSelector" style={movementSelectorStyle}></div>
-        </div>
-      </div>)
-    })
+    }
+
     const boardStyle = {
       gridTemplateColumns: (size().toString() + "fr ").repeat(size()),
     }
@@ -97,77 +146,6 @@ function App() {
     );
   }
 
-  const getPieceColor = (i : number) => {
-    const colNWhite = "#FB6161";
-    const colNBlack = "#61dafb";
-    const colKWhite = "#d32469";
-    const colKBlack = "#53F2D6";
-    let col = gameInstance.current.fieldData[i] === null ? "" : (gameInstance.current.fieldData[i]?.color === 0 ? (gameInstance.current.fieldData[i]?.queen ? colKWhite : colNWhite) : (gameInstance.current.fieldData[i]?.queen ? colKBlack : colNBlack));
-    return col;
-  }
-
-  const onClickPiece = (i : number) => {
-    const piece = gameInstance.current.fieldData[i];
-
-    if(!gameInstance.current.rules.forceTake && piece !== null && gameInstance.current.selectionLock !== null && piece !== gameInstance.current.selectionLock) {
-      gameInstance.current.turn++;
-      gameInstance.current.selectionLock = null;
-      selectedPiece.current = -1;
-      return;
-    }
-
-    if(piece !== null) {
-      if (piece.color !== (gameInstance.current.turn % 2 === 0 ? Color.White : Color.Black)) return;
-      console.log("Selected P." + i.toString() + ", " + (piece.color === 0 ? "White" : "Black") + ", king: " + piece.queen);
-      selectedPiece.current = i;
-      console.log(piece.getAllowedMoves(gameInstance.current));
-      return;
-    }
-    else if(selectedPiece.current !== -1) {
-      if(gameInstance.current.fieldData[selectedPiece.current] !== null) {
-        const sp = gameInstance.current.fieldData[selectedPiece.current] as IPiece;
-        const m = sp.getAllowedMoves(gameInstance.current);
-        const poss = m.filter((e) => {
-          return e.newPosition === i;
-        });
-        if(poss?.length > 0) {
-          gameInstance.current.makeMove(sp, poss[0]);
-          if(poss[0].endTurn) selectedPiece.current = -1;
-          else onClickPiece(poss[0].newPosition);
-        }
-      }
-    }
-  }
-
-  const startGame = React.useCallback(() => {
-    console.log("starting game...");
-    running.current = true;
-    console.log(boardSize.current);
-    gameInstance.current = new GameInstance(boardSize.current, createSettings());
-    console.log(createSettings());
-    gameInstance.current.initializeField();
-    gameInstance.current.turn = 1;
-    selectedPiece.current = -1;
-  }, []);
-  
-  const stopGame = React.useCallback(() => {
-    console.log("resetting game...");
-    running.current = false;
-    gameInstance.current = new GameInstance(boardSize.current, createSettings());
-    gameInstance.current.turn = 1;
-    selectedPiece.current = -1;
-  }, []);
-
-  const update = React.useCallback((frameTime : number) => {
-    const deltaTime = (frameTime - oldTime.current) / 1000;
-    oldTime.current = frameTime;
-    t.current += deltaTime;
-
-    if(!running.current) return;
-    
-    //CODE FOR UPDATE HERE
-  }, []);
-
   const Title = () => {
     return (
       <h1 className="Title" style={{color: (gameInstance.current.turn % 2 === 0 ? "#FB6161" :  "#61dafb")}}>
@@ -176,13 +154,25 @@ function App() {
     );
   }
 
-  const changeBoardSize = () => {
-    boardSize.current += 2;
+  const SettingSwitch = (props : {id : string, labelText : string, checkedVar : MutableRefObject<boolean>}) => {
+    return (
+      <div className="Setting">
+        <Switch 
+          id={props.id} className="SettingSwitch"
+          height={35} width={75}
+          uncheckedIcon={false} checkedIcon={false}
+          onHandleColor="#fff" offHandleColor="#fff" onColor="#61dafb" offColor="#282c34"
+          onChange={(e) => {props.checkedVar.current = e}}
+          checked={props.checkedVar.current}
+        />
+        <p>{props.labelText}</p>
+      </div>
+    );
   }
 
   const Settings = () => {
     return (
-      <div className="Settings" style={{display: show.current ? "block" : "none"}}>
+      <div className="Settings" style={{display: showSettings.current ? "block" : "none"}}>
         <div className="SettingsTitle"><h3>Rule Settings</h3><p style={{fontSize: "15px", color: "#aaa"}}>{"(will only apply after resetting)"}</p></div>
         <div className="SettingsGrid">
           <div className="Setting">
@@ -190,74 +180,10 @@ function App() {
               <div className="MinusButton" onClick={() => {boardSize.current += boardSize.current >= 8 ? -2 : 0;}}><p>-</p></div>
               <div className="PlusButton" onClick={() => {boardSize.current += boardSize.current <= 12 ? 2 : 0;}}><p>+</p></div>
           </div>
-          <div className="Setting">
-            <Switch 
-              id="s1"
-              className="SettingSwitch"
-              height={35}
-              width={75}
-              uncheckedIcon={false}
-              checkedIcon={false}
-              onHandleColor="#fff"
-              offHandleColor="#fff"
-              onColor="#61dafb"
-              offColor="#282c34"
-              onChange={(e) => {setting1.current = e}}
-              checked={setting1.current}
-            />
-            <p>Force Take</p>
-          </div>
-          <div className="Setting">
-            <Switch 
-              id="s2"
-              className="SettingSwitch"
-              height={35}
-              width={75}
-              uncheckedIcon={false}
-              checkedIcon={false}
-              onHandleColor="#fff"
-              offHandleColor="#fff"
-              onColor="#61dafb"
-              offColor="#282c34"
-              onChange={(e) => {setting2.current = e}}
-              checked={setting2.current}
-            />
-            <p>Unlimit the Queen's jumping distance</p>
-          </div>
-          <div className="Setting">
-            <Switch 
-              id="s3"
-              className="SettingSwitch"
-              height={35}
-              width={75}
-              uncheckedIcon={false}
-              checkedIcon={false}
-              onHandleColor="#fff"
-              offHandleColor="#fff"
-              onColor="#61dafb"
-              offColor="#282c34"
-              onChange={(e) => {setting3.current = e}}
-              checked={setting3.current}
-            />
-            <p>Allow Queen to kill multiple in single jump</p>
-          </div>
-          <div className="Setting">
-            <Switch 
-              id="s4"
-              className="SettingSwitch"
-              height={35}
-              width={75}
-              uncheckedIcon={false}
-              checkedIcon={false}
-              onHandleColor="#fff"
-              offHandleColor="#fff"
-              onColor="#61dafb"
-              offColor="#282c34"
-              onChange={(e) => {setting4.current = e}}
-              checked={setting4.current}
-            />
-            <p>Allow Queen to move backwards without kill</p>
-          </div>
+          <SettingSwitch id="sw1" labelText="ForceTake" checkedVar={setting1}/>
+          <SettingSwitch id="sw2" labelText="Unlimit the Queen's jumping distance" checkedVar={setting2}/>
+          <SettingSwitch id="sw3" labelText="Allow Queen to kill multiple in single jump" checkedVar={setting3}/>
+          <SettingSwitch id="sw4" labelText="Allow Queen to move backwards without kill" checkedVar={setting4}/>
         </div>
       </div>
     )
@@ -273,13 +199,9 @@ function App() {
           <button className="Button" onClick={startGame}>
             Start Game
           </button>
-          <button  className="Button" onClick={stopGame}>
-            Reset
-          </button>
         </div>
       </div>
-      
-      <button id="SettingsButton" onClick={() => {show.current = !show.current;}}>
+      <button id="SettingsButton" onClick={() => {showSettings.current = !showSettings.current;}}>
         <img src={settingsLogo} id="SettingsLogo"/>
       </button>
     </div>
