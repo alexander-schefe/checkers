@@ -13,6 +13,7 @@ html {
 
 .Title {
   font-size: calc(20px + 5vh);
+  padding-bottom: 15px;
 }
 
 .Body {
@@ -31,11 +32,6 @@ html {
   max-height: 1000vw;
   overflow: hidden;
 }
-
-/*COLORS*/
-/*#61dafb*/
-/*#BEFB8D*/
-/*FB6161*/
 
 .Game {
   background-color: black;
