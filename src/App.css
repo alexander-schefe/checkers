@@ -234,7 +234,7 @@ p {
   outline: 2px white solid;
 }
 
-#SizeNumber {
+.SettingNumber {
   width: 75px;
   padding-left: calc(50% - 75px);
   color: white;

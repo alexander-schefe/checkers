@@ -4,6 +4,7 @@ export enum Color {
 }
 
 export type Settings = {
+    AIDepth: number;
     boardSize: number;
     forcedTake: boolean,
     queenUnlimitedJumpDistance: boolean;
@@ -13,6 +14,7 @@ export type Settings = {
 
 export class Move {
     piece: Piece;
+    from: [number, number];
     to: [number, number];
     kills: Piece[];
     endTurn: boolean;
@@ -22,6 +24,8 @@ export class Move {
         this.to = to;
         this.kills = kills;
         this.endTurn = endTurn;
+
+        this.from = piece.position;
     }
 }
 
@@ -31,10 +35,11 @@ export class GameInstance {
     board: (Piece | null)[][];
     selectionLock: Piece | null;
     size: number;
+    moveHistory: Move[] = [];
 
     constructor (settings: Settings) {
        this.settings = settings;
-       this.turn = Math.random() < 0.5 ? 0 : 1;
+       this.turn = 0;
        this.board = [];
        this.selectionLock = null;
        this.size = settings.boardSize;
@@ -48,24 +53,39 @@ export class GameInstance {
         return (x + y) % 2 === 0 ? Color.Black : Color.White;
     }
 
+    convertPiece(position : [number, number]) : Piece | null {
+        return this.board[position[0]][position[1]];
+    }
+
+    convertMove(move : Move) : Move | null {
+        const piece = this.convertPiece(move.from);
+        
+        const kills : Piece[] = [];
+        move.kills.forEach((e) => {
+            const p = this.convertPiece(e.position);
+            if(p !== null) kills.push(p as Piece)
+        }); 
+        if (piece !== null) return new Move(piece as Piece, [move.to[0], move.to[1]], kills, move.endTurn);
+        else {
+            console.error("Error: Piece conversion failed!");
+            return null;
+        }
+    }
+
     initializeField () {
         //Fills the Array with null
         this.board = [];
-        for(let x = 0; x < this.size; x++)
-        {
+        for(let x = 0; x < this.size; x++) {
             const arr = []
-            for(let y = 0; y < this.size; y++)
-            {
+            for(let y = 0; y < this.size; y++) {
                 arr.push(null);
             }
             this.board.push(arr);
         }
 
         //Populates the Array with Pieces
-        for(let x = 0; x < this.size; x++)
-        {
-            for(let y = 0; y < this.size; y++)
-            {
+        for(let x = 0; x < this.size; x++) {
+            for(let y = 0; y < this.size; y++) {
                 if(this.getCellColor([x, y]) === Color.White) {
                     this.board[x][y] = null;
                 }
@@ -101,7 +121,6 @@ export class GameInstance {
         }
         else {
             this.selectionLock = piece;
-            console.log("locked on " + piece.position);
         }
 
         //Checks for Promotion
@@ -111,6 +130,8 @@ export class GameInstance {
         if (to[1] === 0 && piece.color === Color.Black) {
             piece.promoted = true;
         }
+
+        this.moveHistory.push(move);
     }
 
     killMovePossible (color: Color) {

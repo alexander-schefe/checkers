@@ -1,7 +1,8 @@
 import React, { MutableRefObject } from 'react';
 import Switch from "react-switch";
 import './App.css';
-import {GameInstance, Piece, Color, Settings} from "./Game"
+import {GameInstance, Piece, Color, Settings, Move} from "./Game"
+import {AI} from "./AI"
 import settingsLogo from "./settingsLogo.png";
 
 function App() {
@@ -10,15 +11,17 @@ function App() {
   const selectedPiece : MutableRefObject<Piece | null> = React.useRef(null);
 
   const boardSize = React.useRef(8);
+  const AIDepth = React.useRef(2);
   const setting1 = React.useRef(true);
   const setting2 = React.useRef(true);
   const setting3 = React.useRef(true);
-  const setting4 = React.useRef(false);
+  const setting4 = React.useRef(true);
 
   const showSettings = React.useRef(false);
 
   const createSettings = () : Settings => {
     return {
+      AIDepth : AIDepth.current,
       boardSize : boardSize.current,
       forcedTake : setting1.current,
       queenUnlimitedJumpDistance : setting2.current,
@@ -184,7 +187,7 @@ function App() {
         <div className="SettingsTitle"><h3>Rule Settings</h3><p style={{fontSize: "15px", color: "#aaa"}}>{"(will only apply after resetting)"}</p></div>
         <div className="SettingsGrid">
           <div className="Setting">
-              <p id="SizeNumber">{boardSize.current}</p>
+              <p className="SettingNumber">{boardSize.current}</p>
               <div className="MinusButton" onClick={() => {boardSize.current += boardSize.current >= 8 ? -2 : 0;}}><p>-</p></div>
               <div className="PlusButton" onClick={() => {boardSize.current += boardSize.current <= 12 ? 2 : 0;}}><p>+</p></div>
           </div>
@@ -192,6 +195,11 @@ function App() {
           <SettingSwitch id="sw2" labelText="Unlimit the Queen's jumping distance" checkedVar={setting2}/>
           <SettingSwitch id="sw3" labelText="Allow Queen to kill multiple in single jump" checkedVar={setting3}/>
           <SettingSwitch id="sw4" labelText="Allow Queen to move backwards without kill" checkedVar={setting4}/>
+          <div className="Setting">
+              <p className="SettingNumber">{AIDepth.current}</p>
+              <div className="MinusButton" onClick={() => {AIDepth.current += AIDepth.current >= 1 ? -1 : 0;}}><p>-</p></div>
+              <div className="PlusButton" onClick={() => {AIDepth.current += AIDepth.current <= 4 ? 1 : 0;}}><p>+</p></div>
+          </div>
         </div>
       </div>
     )
@@ -206,6 +214,12 @@ function App() {
         <div className="Buttons">
           <button className="Button" onClick={resetGame}>
             Reset
+          </button>
+          <button className="Button" onClick={() => {
+                const move = (new AI(gameInstance.current, gameInstance.current.turn % 2)).generate(gameInstance.current.settings.AIDepth);
+                if(move !== null) gameInstance.current.makeMove(move);
+              }}>
+            AI
           </button>
         </div>
       </div>
