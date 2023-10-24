@@ -153,8 +153,8 @@ class VirtualBoard {
                     else v += 1;
                 }
                 else if (p !== null) {
-                    if(p.promoted) v -= 3.1;
-                    else v -= 1.1;
+                    if(p.promoted) v -= 3;
+                    else v -= 1;
                 }
             }
         }

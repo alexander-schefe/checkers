@@ -101,7 +101,7 @@ function App() {
           return e.to[0] === position[0] && e.to[1] === position[1];
         });
         if(poss?.length > 0) {
-          gameInstance.current.makeMove(poss[0]);
+          makeMove(poss[0]);
           if(poss[0].endTurn) selectedPiece.current = null;
           else onClickPiece(poss[0].to);
         }
@@ -109,9 +109,16 @@ function App() {
     }
   }
 
+  const makeMove = (move : Move) => {
+    gameInstance.current.makeMove(move);
+    if(move.endTurn) selectedPiece.current = null;
+    else selectedPiece.current = move.piece;
+  }
+
   const Game = () => {
     document.title = "Checkers - by Alexander";
     useFrameTime();
+    if(selectedPiece.current !== null && selectedPiece.current.color !== gameInstance.current.turn % 2) selectedPiece.current = null;
 
     return (
       <section className="Holder">
@@ -217,7 +224,7 @@ function App() {
           </button>
           <button className="Button" onClick={() => {
                 const move = (new AI(gameInstance.current, gameInstance.current.turn % 2)).generate(gameInstance.current.settings.AIDepth);
-                if(move !== null) gameInstance.current.makeMove(move);
+                if(move !== null) makeMove(move);
               }}>
             AI
           </button>
