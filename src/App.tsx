@@ -198,7 +198,7 @@ function App() {
           <div className="Setting">
               <p className="SettingNumber">{AIDepth.current}</p>
               <div className="MinusButton" onClick={() => {AIDepth.current += AIDepth.current >= 1 ? -1 : 0;}}><p>-</p></div>
-              <div className="PlusButton" onClick={() => {AIDepth.current += AIDepth.current <= 4 ? 1 : 0;}}><p>+</p></div>
+              <div className="PlusButton" onClick={() => {AIDepth.current += AIDepth.current <= 3 ? 1 : 0;}}><p>+</p></div>
           </div>
         </div>
       </div>
