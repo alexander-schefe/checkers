@@ -49,11 +49,20 @@ export class AI {
                     n.value = dir * n.virtualBoard.evaluateBoard();
                 }
                 else {
-                    let lowest = Number.MAX_VALUE;
-                    n.children.forEach((c) => {
-                        if(c.value < lowest) lowest = c.value;
-                    });
-                    n.value = lowest;
+                    if(this.color === n.virtualBoard.gameInstance.turn % 2)    {
+                        let lowest = Number.MAX_VALUE;
+                        n.children.forEach((c) => {
+                            if(c.value < lowest) lowest = c.value;
+                        });
+                        n.value = lowest;
+                    }
+                    else {
+                        let highest = -Number.MAX_VALUE;
+                        n.children.forEach((c) => {
+                            if(c.value > highest) highest = c.value;
+                        });
+                        n.value = highest;
+                    }
                 }
             });
         }
